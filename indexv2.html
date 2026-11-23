@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Party Dice Trays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Alegreya+Sans:wght@400;500;700;800&display=swap">
+<style>
+/* VOICE: game night at the tavern — theatrical, a bit of suspense, still quick to use.
+   IDEA: every seat at the table has its own wooden dice tray; rolls tumble across the felt before the number lands.
+   PICTURE: the row of trays, dice in each player's colour bouncing, settling, then the total revealed.
+   COLOUR and TYPE: dragon red and oxblood felt, walnut frames, brass for results; Cinzel titles, Alegreya Sans text.
+   LAYOUT: roll controls on the left, trays grid on the right with the history under it; on phones trays first, then controls. */
+:root{color-scheme:light dark;
+ --bg:light-dark(#f2ece2,#140b0d);--ink:light-dark(#22161a,#f1e6dc);--mute:light-dark(#6f5f61,#b39f9c);
+ --red:light-dark(#a3122a,#8f1026);--red2:light-dark(#7d0d20,#5c0a18);--card:light-dark(#fffdf9,#221417);
+ --line:light-dark(#e0d4c4,#3a2528);--brass:#e3b04b;--wood:#5a3720;--wood2:#3a2213}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Alegreya Sans",system-ui,sans-serif;overflow-x:clip}
+h1,h2{font-family:Cinzel,Georgia,serif;margin:0;line-height:1.05;text-wrap:balance}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+header{background:var(--red);color:#fbeee4;padding:16px max(4vw,16px);display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+header h1{font-size:clamp(24px,3.6vw,34px);font-weight:800}
+.who{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:rgba(0,0,0,.22);font-weight:700}
+.dot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.ghost{background:transparent;border:1.5px solid rgba(255,255,255,.6);border-radius:10px;padding:8px 14px;min-height:44px;color:#fbeee4}
+main{max-width:1400px;margin:0 auto;padding:clamp(16px,2.6vw,32px) max(3vw,14px);display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);grid-template-areas:'panel table' 'panel hist';gap:clamp(16px,2.4vw,28px);align-items:start}
+.panel{grid-area:panel;align-self:start}.table{grid-area:table}.histsec{grid-area:hist}
+.panel{position:sticky;top:16px;background:radial-gradient(120% 90% at 50% 0%,#7a1729 0%,#4a0c18 75%);color:#fbeee4;border-radius:20px;padding:18px;box-shadow:inset 0 0 0 5px var(--red2),0 14px 30px -18px rgba(0,0,0,.6)}
+.panel h2{font-size:22px;margin-bottom:12px}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr);grid-template-areas:'table' 'panel' 'hist'}.panel{position:static}}
+.dice{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.die{position:relative;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:6px 2px 4px;display:grid;justify-items:center;gap:0;min-height:72px;color:#fbeee4}
+.die:hover{background:rgba(255,255,255,.12)}.die:active{transform:scale(.95)}
+.die svg{width:38px;height:38px}.die b{font-size:14px}
+.die .n{position:absolute;top:-7px;right:-5px;background:var(--brass);color:#2a1408;font-weight:800;font-size:13px;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;padding:0 5px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.formula{flex:1 1 140px;font-family:Cinzel,serif;font-weight:600;font-size:18px}
+.step{display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.25);border-radius:12px;overflow:hidden}
+.step button{background:transparent;border:0;width:44px;height:44px;font-size:22px;color:#fbeee4}
+.step span{min-width:50px;text-align:center;font-weight:800}
+.seg{display:flex;width:100%;border:1px solid rgba(255,255,255,.25);border-radius:12px;overflow:hidden}
+.seg button{flex:1;background:transparent;border:0;padding:0 6px;height:44px;color:#fbeee4;font-weight:700;font-size:15px}
+.seg button[aria-pressed=true]{background:#fbeee4;color:var(--red2)}
+.field{flex:1 1 160px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.2);padding:0 12px;font-size:16px;color:#fbeee4}
+.field::placeholder{color:#cdb3ad}
+.roll{flex:1 1 140px;height:56px;border:0;border-radius:14px;background:var(--brass);color:#2a1408;font-family:Cinzel,serif;font-weight:800;font-size:22px;box-shadow:0 4px 0 #9c7426}
+.roll:disabled{opacity:.45;cursor:not-allowed}
+.sec{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fbeee4}
+.hide{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fbeee4;font-weight:700;text-align:left}
+.hide .sw2{width:38px;height:22px;border-radius:999px;background:rgba(255,255,255,.25);position:relative;flex:none}
+.hide .sw2::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fbeee4;transition:left .15s}
+.hide[aria-pressed=true]{background:#14080b;border-color:var(--brass)}
+.hide[aria-pressed=true] .sw2{background:var(--brass)}.hide[aria-pressed=true] .sw2::after{left:19px}
+.err{color:#ffd2c8;font-size:14px;min-height:20px;margin-top:6px}
+.quick{font-size:13px;color:#e6cfc6;margin:10px 0 0}
+.bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.bar h2{font-size:28px}
+.status{font-size:14px;color:var(--mute);margin:0}
+.conn{display:inline-block;width:10px;height:10px;border-radius:50%;background:#999;margin-right:6px;vertical-align:middle}
+.conn.on{background:#2f8f4e}.conn.wait{background:#e3b04b}
+.invite{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:0 0 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.invite b{flex:0 0 auto}
+.invite input{flex:1 1 200px;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:0 10px;font-size:15px}
+.btn{min-height:42px;padding:0 14px;border-radius:10px;border:0;background:var(--red);color:#fff;font-weight:800}
+.trays{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+@media(max-width:600px){.trays{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+@media(max-width:360px){.trays{grid-template-columns:minmax(0,1fr)}}
+.tray{background:linear-gradient(160deg,#7a4b2c,var(--wood) 40%,var(--wood2));border-radius:18px;padding:9px;box-shadow:0 10px 22px -12px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.18);transition:box-shadow .3s}
+.tray.mine{outline:3px solid var(--brass);outline-offset:2px}
+.tray .top{display:flex;align-items:center;gap:8px;color:#fbeee4;font-weight:800;padding:0 4px 7px;font-size:15px}
+.tray .top .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:11px;font-weight:800;border-radius:6px;padding:1px 6px;background:var(--brass);color:#2a1408;white-space:nowrap}
+.tag.h{background:#14080b;color:#f1e6dc}.tag.dm{background:var(--red);color:#fff}.tag.f{background:#e9e2da;color:#22161a}
+.felt{position:relative;height:190px;border-radius:12px;background:radial-gradient(120% 100% at 50% 20%,#6b1a28 0%,#3e0c16 70%,#2a070e 100%);box-shadow:inset 0 6px 18px rgba(0,0,0,.6),inset 0 0 0 2px rgba(0,0,0,.35);overflow:hidden}
+@media(max-width:600px){.felt{height:140px}}
+.felt canvas{position:absolute;inset:0;width:100%;height:100%}
+.felt .banner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.6);opacity:0;font-family:Cinzel,serif;font-weight:800;font-size:clamp(22px,4vw,34px);color:#ffe27a;text-shadow:0 2px 0 #5a3a00,0 0 18px rgba(255,210,90,.8);pointer-events:none;white-space:nowrap}
+.tray.crit .banner,.tray.fumble .banner{animation:ban 1.6s ease-out forwards}
+.tray.fumble .banner{color:#e9e2da;text-shadow:0 2px 0 #000}
+@keyframes ban{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+.tray.crit{box-shadow:0 0 0 3px #ffd15c,0 0 28px rgba(255,200,80,.7)}
+.tray.fumble .felt{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.tray .foot{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:8px 4px 0;color:#f3e3d6;min-height:52px}
+.tray .what{font-size:14px;line-height:1.3;overflow-wrap:anywhere}
+.tray .tot{font-family:Cinzel,serif;font-weight:800;font-size:36px;line-height:1;color:var(--brass);text-shadow:0 2px 0 rgba(0,0,0,.4)}
+.tray .tot.wait{font-size:18px;color:#e6cfc6;letter-spacing:.02em}
+.tray .tot.pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(.3);opacity:0}100%{transform:none;opacity:1}}
+.alone{grid-column:1/-1;padding:24px;text-align:center;color:var(--mute);border:2px dashed var(--line);border-radius:16px}
+details.hist{margin-top:0}
+details.hist summary{cursor:pointer;font-family:Cinzel,serif;font-weight:800;font-size:22px;padding:6px 0;list-style-position:inside}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px}
+.tools button{min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
+.tools button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.log li{background:var(--card);border:1px solid var(--line);border-left:7px solid var(--c);border-radius:12px;padding:8px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center}
+.log li.secret{background:repeating-linear-gradient(135deg,var(--card) 0 10px,color-mix(in srgb,var(--card) 88%,var(--ink)) 10px 20px)}
+.log .nm{font-weight:800}
+.log .meta{font-size:14px;color:var(--mute)}
+.log .t{grid-row:1/span 3;grid-column:2;font-family:Cinzel,serif;font-weight:800;font-size:28px}
+.log .bits{display:flex;flex-wrap:wrap;gap:4px;font-size:13px}
+.pip{border:1px solid var(--line);border-radius:6px;padding:0 6px;white-space:nowrap}
+.pip.drop{opacity:.45;text-decoration:line-through}.pip.max{border-color:#2f8f4e;color:#2f8f4e;font-weight:800}.pip.one{border-color:var(--red);color:var(--red);font-weight:800}
+.empty{display:block!important;padding:20px;text-align:center;color:var(--mute);border:2px dashed var(--line)!important}
+.modal{position:fixed;inset:0;background:rgba(20,6,10,.72);display:grid;place-items:center;padding:16px;z-index:5}
+.modal[hidden]{display:none}
+.sheet{background:var(--card);color:var(--ink);border-radius:20px;padding:clamp(20px,4vw,30px);width:min(460px,100%);max-height:100%;overflow:auto;box-shadow:0 30px 60px rgba(0,0,0,.4)}
+.sheet h2{font-size:30px;margin-bottom:6px}
+.sheet p{margin:0 0 14px;color:var(--mute)}
+.sheet label{display:block;font-weight:700;margin:12px 0 6px}
+.sheet input[type=text]{width:100%;height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 14px;font-size:17px}
+.sw{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.sw button{aspect-ratio:1;border-radius:12px;border:3px solid transparent;background:var(--c);min-height:44px}
+.sw button[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 3px var(--card)}
+.custom{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:15px;color:var(--mute)}
+.custom input{width:52px;height:40px;border:0;background:none;padding:0}
+.go{margin-top:18px;width:100%;height:54px;border:0;border-radius:14px;background:var(--red);color:#fff;font-family:Cinzel,serif;font-weight:800;font-size:20px}
+.sheet .err{color:var(--red)}
+.or{display:flex;align-items:center;gap:10px;color:var(--mute);margin:18px 0 4px;font-size:14px}.or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
+.joinrow{display:flex;gap:8px}.joinrow input{flex:1}
+@media(prefers-reduced-motion:reduce){.tray .tot.pop,.tray.fumble .felt{animation:none}.hide .sw2::after{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Party Dice Trays</h1>
+  <div class="who">
+    <span class="chip" id="meChip"><span>Not seated</span></span>
+    <button class="ghost" id="soundBtn" type="button" aria-pressed="true">Sound on</button>
+    <button class="ghost" id="editMe" type="button">Change name or colour</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel" aria-label="Your roll">
+    <h2>Your roll</h2>
+    <div class="dice" id="dice"></div>
+    <div class="row">
+      <div class="formula" id="formula">No dice yet</div>
+      <div class="step" aria-label="Modifier"><button type="button" id="modDown" aria-label="Lower modifier">−</button><span id="modVal">+0</span><button type="button" id="modUp" aria-label="Raise modifier">+</button></div>
+    </div>
+    <div class="row">
+      <div class="seg" role="group" aria-label="d20 mode">
+        <button type="button" data-mode="normal" aria-pressed="true">Normal</button>
+        <button type="button" data-mode="adv" aria-pressed="false">Advantage</button>
+        <button type="button" data-mode="dis" aria-pressed="false">Disadvantage</button>
+      </div>
+    </div>
+    <div class="row"><input class="field" id="label" maxlength="40" placeholder="What's it for? e.g. Stealth"></div>
+    <div class="row">
+      <button class="roll" id="rollBtn" type="button" disabled>Roll</button>
+      <button class="sec" id="clearPool" type="button" style="height:56px">Clear</button>
+    </div>
+    <div class="row"><button type="button" class="hide" id="hideBtn" aria-pressed="false"><span class="sw2"></span><span id="hideTxt">Hidden roll: only me and the DM see it</span></button></div>
+    <form class="row" id="typed" autocomplete="off">
+      <input class="field" id="notation" maxlength="60" placeholder="Type a roll: 4d6d1, 2d20kh1+5" aria-label="Type a roll in dice notation">
+      <button class="sec" type="submit">Roll it</button>
+    </form>
+    <div class="row"><button class="sec" type="button" id="stats">Ability score (4d6d1)</button></div>
+    <div class="err" id="notErr"></div>
+    <p class="quick">Tap a die to add one; right-click or long-press to remove one. Every roll is made by the DM's table, so nobody can fudge their dice.</p>
+  </section>
+
+  <section class="table" aria-label="The table">
+    <div class="bar">
+      <h2>The table</h2>
+      <p class="status"><span class="conn" id="connDot"></span><span id="statusTxt">Not at a table yet.</span></p>
+    </div>
+    <div class="invite" id="invite" hidden>
+      <b>Invite link</b>
+      <input id="inviteUrl" readonly aria-label="Invite link">
+      <button type="button" class="btn" id="copyBtn">Copy</button>
+    </div>
+    <div class="trays" id="trays"><div class="alone">Trays appear here as people sit down.</div></div>
+
+  </section>
+
+  <section class="histsec" aria-label="Roll history">
+    <details class="hist" open>
+      <summary>Roll history</summary>
+      <div class="tools">
+        <button type="button" id="onlyMine" aria-pressed="false">Only my rolls</button>
+        <button type="button" id="wipe" hidden>Clear the log</button>
+      </div>
+      <ol class="log" id="log"></ol>
+    </details>
+</main>
+
+<div class="modal" id="modal" hidden>
+  <form class="sheet" id="who">
+    <h2 id="whoTitle">Take a seat</h2>
+    <p id="whoSub">Your name and colour mark your tray and dice.</p>
+    <label for="nameIn">Name</label>
+    <input type="text" id="nameIn" maxlength="24" autocomplete="nickname" placeholder="e.g. Ephialtes" required>
+    <label>Dice colour</label>
+    <div class="sw" id="swatches"></div>
+    <div class="custom"><input type="color" id="customC" aria-label="Pick any colour" value="#3b82f6"><span>…or pick any colour</span></div>
+    <div class="err" id="whoErr"></div>
+    <button class="go" type="submit" id="goBtn">Sit down</button>
+    <div id="joinBox" hidden>
+      <div class="or">or join a friend's table</div>
+      <div class="joinrow"><input type="text" id="joinIn" placeholder="Paste their invite link" aria-label="Invite link"><button class="btn" type="button" id="joinBtn">Join</button></div>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const SIDES = [4,6,8,10,12,20,100];
+const COLOURS = ['#d62839','#f08a24','#e9c46a','#2a9d8f','#2f8f4e','#3a86ff','#4361ee','#8338ec','#c2185b','#ff70a6','#f4f1ea','#37474f'];
+const SHAPES = {
+  4:'<polygon points="30,5 56,52 4,52"/><line x1="30" y1="5" x2="30" y2="52"/>',
+  6:'<rect x="8" y="8" width="44" height="44" rx="7"/>',
+  8:'<polygon points="30,3 56,30 30,57 4,30"/><line x1="4" y1="30" x2="56" y2="30"/>',
+  10:'<polygon points="30,3 56,27 30,57 4,27"/><polyline points="4,27 30,38 56,27"/><line x1="30" y1="38" x2="30" y2="57"/>',
+  12:'<polygon points="30,3 57,23 47,55 13,55 3,23"/><polygon points="30,14 44,25 39,42 21,42 16,25"/>',
+  20:'<polygon points="30,3 55,16 55,44 30,57 5,44 5,16"/><polygon points="30,14 47,42 13,42"/><line x1="30" y1="3" x2="30" y2="14"/><line x1="5" y1="44" x2="13" y2="42"/><line x1="55" y1="44" x2="47" y2="42"/>',
+  100:'<polygon points="22,6 42,26 22,56 2,26"/><polygon points="40,6 58,26 40,56 30,40"/>'
+};
+const CODE_RE = /^pdt-[a-z0-9]{8}$/;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const okC = c => /^#[0-9a-f]{6}$/i.test(c) ? c : '#888888';
+const cleanStr = (v, n) => String(v ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, n);
+const rnd = n => { const a = new Uint32Array(1); const lim = Math.floor(4294967296 / n) * n; let x; do { crypto.getRandomValues(a); x = a[0]; } while (x >= lim); return x % n + 1; };
+const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const PEER_OPTS = Object.assign({ debug: 0 }, store.get('dice-peer-opts') || {});
+
+let me = store.get('dice-me');
+let pool = Object.fromEntries(SIDES.map(s => [s, 0]));
+let mod = 0, mode = 'normal', onlyMine = false, hidden = false, wipeArmed = false;
+let rolls = [];                 // newest first
+const revealed = new Set();     // ids shown in history (after their dice settle)
+let code = (location.hash.slice(1).match(CODE_RE) || [])[0] || null;
+let isHost = !!code && store.get('dice-host-code') === code;
+let peer = null, conn = null, players = new Map(), myId = null, retryT = null, hostTries = 0;
+let soundOn = store.get('dice-sound') !== false;
+
+/* ---------- roll notation ---------- */
+function parseRoll(src){
+  const s = String(src).replace(/\s+/g, '').toLowerCase();
+  if (!s) throw 'Type a roll first, e.g. 4d6d1.';
+  const re = /([+-]?)(?:(\d*)d(\d+|%)(?:(kh|kl|dh|dl|k|d)(\d+))?|(\d+))/y;
+  const terms = []; let i = 0;
+  while (i < s.length) {
+    re.lastIndex = i; const m = re.exec(s);
+    if (!m || m[0] === '' || (i > 0 && !m[1])) throw `I can't read "${cleanStr(src, 60)}". Try something like 4d6d1 or 2d20kh1+3.`;
+    i = re.lastIndex;
+    const sign = m[1] === '-' ? -1 : 1;
+    if (m[6] !== undefined) { if (+m[6] > 1000) throw 'Keep modifiers under 1000.'; terms.push({ k: 'n', v: sign * +m[6] }); continue; }
+    const n = m[2] === '' ? 1 : +m[2], sides = m[3] === '%' ? 100 : +m[3];
+    if (n < 1 || n > 100) throw 'Use between 1 and 100 dice per group.';
+    if (sides < 2 || sides > 1000) throw 'Dice need between 2 and 1000 sides.';
+    let op = m[4] || null; const x = m[5] !== undefined ? +m[5] : 0;
+    if (op === 'd') op = 'dl'; if (op === 'k') op = 'kh';
+    if (op && (x < 0 || x > n)) throw `Can't ${op[0] === 'k' ? 'keep' : 'drop'} ${x} of ${n} dice.`;
+    terms.push({ k: 'd', sign, n, sides, op, x });
+  }
+  if (terms.length > 20) throw 'That roll has too many parts.';
+  if (!terms.some(t => t.k === 'd')) throw 'Add at least one die, e.g. 1d20+3.';
+  return terms;
+}
+function rollTerms(terms){
+  const groups = []; let modS = 0, total = 0;
+  for (const t of terms) {
+    if (t.k === 'n') { modS += t.v; continue; }
+    const vals = Array.from({ length: t.n }, () => rnd(t.sides));
+    const order = vals.map((v, i) => i).sort((a, b) => vals[a] - vals[b]);
+    const drop = new Set();
+    if (t.op === 'dl') order.slice(0, t.x).forEach(i => drop.add(i));
+    if (t.op === 'dh') order.slice(t.n - t.x).forEach(i => drop.add(i));
+    if (t.op === 'kh') order.slice(0, t.n - t.x).forEach(i => drop.add(i));
+    if (t.op === 'kl') order.slice(t.x).forEach(i => drop.add(i));
+    const r = vals.map((v, i) => ({ v, d: drop.has(i) }));
+    r.forEach(x => { if (!x.d) total += t.sign * x.v; });
+    groups.push({ s: t.sides, r, neg: t.sign < 0 });
+  }
+  const formula = terms.map((t, i) => {
+    const neg = t.k === 'n' ? t.v < 0 : t.sign < 0;
+    const body = t.k === 'n' ? Math.abs(t.v) : `${t.n}d${t.sides === 100 ? '%' : t.sides}${t.op ? (t.op === 'dl' ? 'd' : t.op) + t.x : ''}`;
+    return i === 0 ? (neg ? '−' : '') + body : (neg ? ' − ' : ' + ') + body;
+  }).join('');
+  return { groups, mod: modS, total: total + modS, formula };
+}
+function poolText(){
+  const parts = [];
+  for (const s of SIDES) {
+    if (!pool[s]) continue;
+    if (s === 20 && mode !== 'normal') for (let i = 0; i < pool[s]; i++) parts.push('2d20' + (mode === 'adv' ? 'kh1' : 'kl1'));
+    else parts.push(`${pool[s]}d${s}`);
+  }
+  return parts.length ? parts.join('+') + (mod ? (mod > 0 ? '+' : '-') + Math.abs(mod) : '') : '';
+}
+
+/* ---------- identity ---------- */
+let pick = me?.color || COLOURS[5];
+function drawSwatches(){ $('#swatches').innerHTML = COLOURS.map(c => `<button type="button" style="--c:${c}" data-c="${c}" aria-label="Colour ${c}" aria-pressed="${c === pick}"></button>`).join(''); }
+$('#swatches').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; pick = b.dataset.c; drawSwatches(); });
+$('#customC').addEventListener('input', e => { pick = e.target.value; drawSwatches(); });
+function openWho(){
+  const fresh = !code;
+  $('#whoTitle').textContent = fresh ? 'Start a table' : isHost ? 'Your seat' : 'Join the table';
+  $('#whoSub').textContent = fresh ? "You'll be the DM. You get a link to send your players, and your browser hosts the table, so keep this tab open while you play." : 'Your name and colour mark your tray and dice.';
+  $('#goBtn').textContent = fresh ? 'Start a table as DM' : isHost ? 'Save' : 'Join as a player';
+  $('#joinBox').hidden = !fresh; $('#whoErr').textContent = '';
+  $('#nameIn').value = me?.name || ''; pick = me?.color || pick; drawSwatches();
+  $('#modal').hidden = false; setTimeout(() => $('#nameIn').focus(), 30);
+}
+function saveMe(){
+  const name = cleanStr($('#nameIn').value, 24);
+  if (!name) { $('#whoErr').textContent = 'Pick a name first.'; return false; }
+  me = { name, color: okC(pick) }; store.set('dice-me', me); return true;
+}
+$('#editMe').addEventListener('click', openWho);
+$('#who').addEventListener('submit', e => {
+  e.preventDefault(); if (!saveMe()) return;
+  $('#modal').hidden = true;
+  if (!code || !peer) { isHost || !code ? startHosting() : startJoining(); }
+  else if (isHost) sendRoster();
+  else if (conn && conn.open) conn.send({ type: 'hello', name: me.name, color: me.color });
+  drawMe(); updateRollBtn(); renderLog();
+});
+$('#joinBtn').addEventListener('click', () => {
+  const m = $('#joinIn').value.match(/pdt-[a-z0-9]{8}/);
+  if (!m) { $('#whoErr').textContent = "That doesn't look like a table link."; return; }
+  if (!saveMe()) return;
+  code = m[0]; isHost = false; setHash(code);
+  $('#modal').hidden = true; drawMe(); updateRollBtn(); startJoining();
+});
+function drawMe(){
+  $('#meChip').innerHTML = me ? `<span class="dot" style="background:${okC(me.color)}"></span><span>${esc(me.name)}${isHost ? ' · DM' : ''}</span>` : '<span>Not seated</span>';
+  $('#hideTxt').textContent = isHost ? 'Hidden roll: only you (the DM) see it' : 'Hidden roll: only me and the DM see it';
+  $('#wipe').hidden = !isHost;
+}
+
+/* ---------- connection: the DM hosts ---------- */
+function setStatus(t, state){ $('#statusTxt').textContent = t; $('#connDot').className = 'conn ' + (state || ''); }
+function inviteLink(){ return location.href.split('#')[0] + '#' + code; }
+function newCode(){ const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let c = 'pdt-'; const b = new Uint8Array(8); crypto.getRandomValues(b); for (const x of b) c += a[x % 36]; return c; }
+function setHash(c){ try { history.replaceState(null, '', '#' + c); } catch {} }
+function startHosting(){
+  if (!code) { code = newCode(); setHash(code); }
+  isHost = true; store.set('dice-host-code', code);
+  rolls = (store.get('dice-hist-' + code) || []).filter(r => r && typeof r.t === 'number');
+  rolls.forEach(r => revealed.add(r.id));
+  drawMe(); renderLog(); sendRoster();
+  if (typeof Peer === 'undefined') { setStatus("Solo mode: couldn't reach the connection service here, so only you can roll. Open the page from its web address to play with friends."); return; }
+  $('#invite').hidden = false; $('#inviteUrl').value = inviteLink();
+  setStatus('Opening your table…', 'wait');
+  peer = new Peer(code, PEER_OPTS);
+  peer.on('open', () => { hostTries = 0; setStatus('Table open. Keep this tab open while you play.', 'on'); sendRoster(); });
+  peer.on('connection', c => {
+    c.on('data', d => onHostData(c, d));
+    c.on('close', () => { players.delete(c.peer); sendRoster(); });
+    c.on('error', () => { players.delete(c.peer); sendRoster(); });
+  });
+  peer.on('disconnected', () => { setStatus('Reconnecting your table…', 'wait'); setTimeout(() => { try { peer.reconnect(); } catch {} }, 2000); });
+  peer.on('error', err => {
+    if (err.type === 'unavailable-id' && hostTries++ < 15) {
+      setStatus('Reclaiming your table… (takes a few seconds after a reload)', 'wait');
+      try { peer.destroy(); } catch {} peer = null; setTimeout(startHosting, 4000);
+    } else if (err.type === 'unavailable-id') setStatus('Your table link is stuck. Reload in a minute.');
+    else if (['network', 'server-error', 'socket-error', 'socket-closed', 'browser-incompatible'].includes(err.type)) setStatus("Can't reach the connection service right now. You can still roll solo; friends can join once it's back.", 'wait');
+  });
+}
+function onHostData(c, d){
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'hello') {
+    const isNew = !players.has(c.peer);
+    players.set(c.peer, { id: c.peer, conn: c, name: cleanStr(d.name, 24) || 'Someone', color: okC(d.color) });
+    if (isNew) c.send({ type: 'welcome', you: c.peer, history: rolls.filter(r => !r.secret || r.cid === c.peer).slice(0, 150) });
+    sendRoster();
+  } else if (d.type === 'roll') {
+    const p = players.get(c.peer); if (!p) return;
+    try { makeRoll({ cid: p.id, name: p.name, color: p.color, role: 'player' }, d); }
+    catch (e) { c.send({ type: 'error', msg: typeof e === 'string' ? e : 'That roll could not be read.' }); }
+  }
+}
+function makeRoll(who, req){
+  const out = rollTerms(parseRoll(cleanStr(req.text, 120)));
+  const m = ['adv', 'dis'].includes(req.mode) ? req.mode : 'normal';
+  const roll = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...who, label: cleanStr(req.label, 40), mode: m, secret: !!req.hidden, t: Date.now(), ...out };
+  rolls = [roll, ...rolls].slice(0, 200);
+  store.set('dice-hist-' + code, rolls);
+  for (const p of players.values()) if (!roll.secret || p.id === roll.cid) { try { p.conn.send({ type: 'roll', roll }); } catch {} }
+  throwDice(roll);
+}
+function sendRoster(){
+  if (!isHost) return;
+  const list = [{ name: me?.name || 'DM', color: me?.color || '#888888', role: 'dm', id: 'dm' }, ...[...players.values()].map(p => ({ name: p.name, color: p.color, role: 'player', id: p.id }))];
+  for (const p of players.values()) { try { p.conn.send({ type: 'roster', list }); } catch {} }
+  renderTrays(list);
+}
+
+/* ---------- connection: players join ---------- */
+function startJoining(){
+  if (typeof Peer === 'undefined') { setStatus("Couldn't load the connection library. Check your internet and reload."); return; }
+  setStatus('Finding the table…', 'wait');
+  $('#invite').hidden = false; $('#inviteUrl').value = inviteLink();
+  peer = new Peer(PEER_OPTS);
+  peer.on('open', () => connectToHost());
+  peer.on('error', err => {
+    if (err.type === 'peer-unavailable') { setStatus("The DM's table isn't open right now. Waiting for it…", 'wait'); retry(5000); }
+    else if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(err.type)) { setStatus('Connection trouble. Retrying…', 'wait'); retry(5000); }
+  });
+  peer.on('disconnected', () => { setTimeout(() => { try { peer.reconnect(); } catch {} }, 2000); });
+}
+function retry(ms){ clearTimeout(retryT); retryT = setTimeout(() => { if (peer && !peer.disconnected && !(conn && conn.open)) connectToHost(); }, ms); }
+function connectToHost(){
+  try { conn && conn.close(); } catch {}
+  conn = peer.connect(code, { reliable: true });
+  conn.on('open', () => { setStatus('Connected to the table.', 'on'); conn.send({ type: 'hello', name: me.name, color: me.color }); });
+  conn.on('data', onPlayerData);
+  conn.on('close', () => { setStatus('Lost the table. Reconnecting…', 'wait'); retry(3000); });
+  conn.on('error', () => retry(3000));
+}
+function onPlayerData(d){
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'welcome') {
+    myId = d.you; rolls = Array.isArray(d.history) ? d.history.filter(r => r && typeof r.t === 'number') : [];
+    revealed.clear(); rolls.forEach(r => revealed.add(r.id)); renderLog();
+    for (const t of trays.values()) showLatest(t);
+  }
+  else if (d.type === 'roll' && d.roll && typeof d.roll.t === 'number') { rolls = [d.roll, ...rolls.filter(r => r.id !== d.roll.id)].slice(0, 200); throwDice(d.roll); }
+  else if (d.type === 'roster') renderTrays(Array.isArray(d.list) ? d.list : []);
+  else if (d.type === 'clear') clearAll();
+  else if (d.type === 'error') $('#notErr').textContent = cleanStr(d.msg, 120);
+}
+const mineId = () => isHost ? 'dm' : myId;
+
+/* ---------- sending a roll ---------- */
+function requestRoll(text, m){
+  if (!me) { openWho(); return false; }
+  const req = { type: 'roll', text, label: $('#label').value, hidden, mode: m || 'normal' };
+  if (isHost) {
+    try { makeRoll({ cid: 'dm', name: me.name, color: me.color, role: 'dm' }, req); $('#notErr').textContent = ''; return true; }
+    catch (e) { $('#notErr').textContent = typeof e === 'string' ? e : 'That roll could not be read.'; return false; }
+  }
+  try { parseRoll(text); } catch (e) { $('#notErr').textContent = e; return false; }
+  if (!conn || !conn.open) { $('#notErr').textContent = "You're not connected to the table yet."; return false; }
+  $('#notErr').textContent = ''; conn.send(req); return true;
+}
+
+/* ---------- trays and tumbling dice ---------- */
+const trays = new Map(); // id -> tray
+function lum(hex){ const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255; }
+function shade(hex, f){ const n = parseInt(hex.slice(1), 16); const c = [n >> 16, n >> 8 & 255, n & 255].map(v => Math.max(0, Math.min(255, Math.round(v * f)))); return `rgb(${c})`; }
+function renderTrays(list){
+  const ids = list.map(p => String(p.id));
+  for (const [id, t] of trays) if (!ids.includes(id)) { t.el.remove(); trays.delete(id); }
+  const box = $('#trays');
+  if (!list.length) { box.innerHTML = '<div class="alone">Trays appear here as people sit down.</div>'; return; }
+  box.querySelector('.alone')?.remove();
+  const order = [...list].sort((a, b) => (b.id === mineId()) - (a.id === mineId()) || (b.role === 'dm') - (a.role === 'dm'));
+  for (const p of order) {
+    const id = String(p.id);
+    let t = trays.get(id);
+    if (!t) t = makeTray(id);
+    t.color = okC(p.color); t.name = cleanStr(p.name, 24);
+    t.el.classList.toggle('mine', id === mineId());
+    t.el.querySelector('.top').innerHTML = `<span class="dot" style="background:${t.color}"></span><span class="nm">${esc(t.name)}</span>${p.role === 'dm' ? '<span class="tag dm">DM</span>' : ''}${id === mineId() ? '<span class="tag">You</span>' : ''}`;
+    box.appendChild(t.el);
+    if (!t.dice.length) showLatest(t); else draw(t);
+  }
+}
+function makeTray(id){
+  const el = document.createElement('div'); el.className = 'tray';
+  el.innerHTML = `<div class="top"></div><div class="felt"><canvas></canvas><div class="banner"></div></div><div class="foot"><div class="what">No rolls yet</div><div class="tot"></div></div>`;
+  const t = { id, el, cv: el.querySelector('canvas'), dice: [], rolling: false, roll: null, w: 0, h: 0, lastClack: 0, color: '#888888', name: '' };
+  t.ctx = t.cv.getContext('2d');
+  t.ro = new ResizeObserver(() => sizeTray(t)); t.ro.observe(el.querySelector('.felt'));
+  trays.set(id, t); return t;
+}
+function sizeTray(t){
+  const r = t.cv.parentElement.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  t.w = r.width; t.h = r.height; t.cv.width = Math.round(r.width * dpr); t.cv.height = Math.round(r.height * dpr);
+  t.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (!t.rolling && t.roll) layoutStatic(t, t.roll);
+  else for (const d of t.dice) { d.x = Math.min(Math.max(d.x, d.r), t.w - d.r); d.y = Math.min(Math.max(d.y, d.r), t.h - d.r); }
+  draw(t);
+}
+function flatDice(roll){
+  const out = [];
+  for (const g of roll.groups || []) for (const x of g.r || []) out.push({ s: Number(g.s) || 6, v: Number(x.v) || 1, drop: !!x.d });
+  return out;
+}
+function dieRadius(t, n){ return Math.max(12, Math.min(34, Math.sqrt((t.w * t.h) / (Math.max(n, 1) * 9)) / 1.45)); }
+function setFoot(t, roll, done){
+  const n = natTag(roll), m = modeTxt(roll.mode);
+  t.el.querySelector('.what').innerHTML = `${roll.label ? `<b>${esc(roll.label)}</b><br>` : ''}${esc(roll.formula)}${m ? ' · ' + m : ''}${roll.secret ? ' <span class="tag h">Hidden</span>' : ''}${done && n === 'crit' ? ' <span class="tag">Natural 20</span>' : done && n === 'fumble' ? ' <span class="tag f">Natural 1</span>' : ''}`;
+  const tot = t.el.querySelector('.tot');
+  tot.className = 'tot' + (done ? '' : ' wait');
+  tot.textContent = done ? (Number(roll.total) || 0) : 'Rolling…';
+}
+function showLatest(t){
+  const roll = rolls.find(r => r.cid === t.id);
+  if (!roll) { t.dice = []; t.el.querySelector('.what').textContent = 'No rolls yet'; t.el.querySelector('.tot').textContent = ''; draw(t); return; }
+  if (!t.w) sizeTray(t);
+  layoutStatic(t, roll); setFoot(t, roll, true); draw(t);
+}
+function layoutStatic(t, roll){
+  const all = flatDice(roll).slice(0, 30), r = dieRadius(t, all.length);
+  const cols = Math.max(1, Math.floor((t.w || 260) / (r * 2.4))), rows = Math.ceil(all.length / cols);
+  const ox = ((t.w || 260) - Math.min(all.length, cols) * r * 2.4) / 2 + r * 1.2, oy = ((t.h || 190) - rows * r * 2.4) / 2 + r * 1.2;
+  t.roll = roll; t.rolling = false;
+  t.dice = all.map((d, i) => ({ ...d, r, x: ox + (i % cols) * r * 2.4, y: oy + Math.floor(i / cols) * r * 2.4, a: (Math.random() - .5) * .25, vx: 0, vy: 0, va: 0, face: d.v, settled: true }));
+}
+function throwDice(roll){
+  let t = trays.get(String(roll.cid));
+  if (!t) { revealed.add(roll.id); renderLog(); return; }
+  if (t.rolling && t.roll) finish(t);          // finish an interrupted roll first
+  if (!t.w) sizeTray(t);
+  t.el.classList.remove('crit', 'fumble');
+  if (REDUCED) { layoutStatic(t, roll); draw(t); finish(t); return; }
+  const all = flatDice(roll).slice(0, 30), r = dieRadius(t, all.length), sp = Math.max(1, t.w / 280);
+  const fromLeft = Math.random() < .5;
+  t.dice = all.map(d => ({ ...d, r,
+    x: fromLeft ? r + Math.random() * t.w * .2 : t.w - r - Math.random() * t.w * .2,
+    y: r + Math.random() * Math.max(1, t.h - 2 * r),
+    vx: (fromLeft ? 1 : -1) * (520 + Math.random() * 520) * sp, vy: (Math.random() - .5) * 700,
+    a: Math.random() * 6.28, va: (Math.random() - .5) * 24, face: rnd(d.s), flip: 0, settled: false }));
+  t.roll = roll; t.rolling = true; t.start = performance.now();
+  setFoot(t, roll, false);
+  t.el.querySelector('.banner').textContent = '';
+  startLoop();
+}
+let looping = false, lastT = 0;
+function startLoop(){ if (looping) return; looping = true; lastT = performance.now(); requestAnimationFrame(tick); }
+function tick(now){
+  const dt = Math.min(.033, (now - lastT) / 1000); lastT = now;
+  let any = false;
+  for (const t of trays.values()) {
+    if (!t.rolling) continue; any = true;
+    step(t, dt, now); draw(t);
+    if (t.dice.every(d => d.settled)) finish(t);
+  }
+  if (any) requestAnimationFrame(tick); else looping = false;
+}
+function step(t, dt, now){
+  const el = (now - t.start) / 1000, fr = Math.exp(-2.1 * dt), fa = Math.exp(-2.6 * dt);
+  for (const d of t.dice) {
+    if (d.settled) continue;
+    d.vx *= fr; d.vy *= fr; d.va *= fa;
+    d.x += d.vx * dt; d.y += d.vy * dt; d.a += d.va * dt;
+    let hit = 0;
+    if (d.x < d.r) { d.x = d.r; hit = Math.abs(d.vx); d.vx = -d.vx * .62; d.va += d.vy * .01; }
+    if (d.x > t.w - d.r) { d.x = t.w - d.r; hit = Math.abs(d.vx); d.vx = -d.vx * .62; d.va -= d.vy * .01; }
+    if (d.y < d.r) { d.y = d.r; hit = Math.max(hit, Math.abs(d.vy)); d.vy = -d.vy * .62; d.va -= d.vx * .01; }
+    if (d.y > t.h - d.r) { d.y = t.h - d.r; hit = Math.max(hit, Math.abs(d.vy)); d.vy = -d.vy * .62; d.va += d.vx * .01; }
+    if (hit > 120) clack(t, hit);
+    const sp = Math.hypot(d.vx, d.vy);
+    if (sp < 160) { const up = Math.round(d.a / 6.2832) * 6.2832; d.va *= .85; d.a += (up - d.a) * Math.min(1, dt * 7); }
+    if (sp > 60 && now - d.flip > 65) { d.face = rnd(d.s); d.flip = now; }
+    if ((el > .7 && sp < 28) || el > 2.6) { d.settled = true; d.vx = d.vy = d.va = 0; d.face = d.v; d.a = Math.round(d.a / 6.2832) * 6.2832 + (Math.random() - .5) * .25; }
+  }
+  for (let i = 0; i < t.dice.length; i++) for (let j = i + 1; j < t.dice.length; j++) {
+    const a = t.dice[i], b = t.dice[j], dx = b.x - a.x, dy = b.y - a.y, dist = Math.hypot(dx, dy) || .01, min = a.r + b.r;
+    if (dist >= min) continue;
+    const nx = dx / dist, ny = dy / dist, push = (min - dist) / 2;
+    if (!a.settled) { a.x -= nx * push; a.y -= ny * push; }
+    if (!b.settled) { b.x += nx * push; b.y += ny * push; }
+    const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+    if (rel > 0) {
+      const imp = rel * .85;
+      if (!a.settled) { a.vx -= imp * nx; a.vy -= imp * ny; a.va += (Math.random() - .5) * 4; }
+      if (!b.settled) { b.vx += imp * nx; b.vy += imp * ny; b.va += (Math.random() - .5) * 4; }
+      if (rel > 140) clack(t, rel);
+    }
+  }
+}
+function finish(t){
+  const roll = t.roll; t.rolling = false;
+  for (const d of t.dice) { d.settled = true; d.face = d.v; }
+  draw(t); setFoot(t, roll, true);
+  const tot = t.el.querySelector('.tot'); tot.classList.remove('pop'); void tot.offsetWidth; if (!REDUCED) tot.classList.add('pop');
+  const n = natTag(roll);
+  if (n) { t.el.classList.remove('crit', 'fumble'); void t.el.offsetWidth; t.el.classList.add(n); t.el.querySelector('.banner').textContent = n === 'crit' ? 'NAT 20!' : 'Nat 1…'; if (n === 'crit') fanfare(); }
+  revealed.add(roll.id); renderLog();
+}
+function polyPts(s){
+  const P = (n, rot) => Array.from({ length: n }, (_, i) => [Math.cos(rot + i * 2 * Math.PI / n), Math.sin(rot + i * 2 * Math.PI / n)]);
+  if (s === 4) return [[0, -1.05], [.95, .62], [-.95, .62]];
+  if (s === 6) return [[-.8, -.8], [.8, -.8], [.8, .8], [-.8, .8]];
+  if (s === 8) return [[0, -1], [.86, 0], [0, 1], [-.86, 0]];
+  if (s === 10 || s === 100) return [[0, -1], [.92, -.12], [0, 1], [-.92, -.12]];
+  if (s === 12) return P(5, -Math.PI / 2);
+  if (s === 20) return P(6, -Math.PI / 2);
+  return null;
+}
+function draw(t){
+  const c = t.ctx; if (!c || !t.w) return;
+  c.clearRect(0, 0, t.w, t.h);
+  for (const d of t.dice) {
+    const col = t.roll ? okC(t.roll.color) : t.color, pts = polyPts(d.s), faded = d.settled && d.drop && !t.rolling;
+    c.save(); c.translate(d.x, d.y); c.rotate(d.a); c.globalAlpha = faded ? .3 : 1;
+    const path = () => { c.beginPath(); if (pts) { pts.forEach(([x, y], i) => i ? c.lineTo(x * d.r, y * d.r) : c.moveTo(x * d.r, y * d.r)); c.closePath(); } else c.arc(0, 0, d.r * .9, 0, 6.283); };
+    c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = d.settled ? 4 : 10; c.shadowOffsetY = d.settled ? 2 : 6;
+    path(); const g = c.createLinearGradient(-d.r, -d.r, d.r, d.r); g.addColorStop(0, shade(col, 1.25)); g.addColorStop(1, shade(col, .72)); c.fillStyle = g; c.fill();
+    c.shadowColor = 'transparent'; c.lineJoin = 'round'; c.lineWidth = 1.5; c.strokeStyle = 'rgba(0,0,0,.45)'; c.stroke();
+    if (s20Inner(d.s)) { c.beginPath(); c.moveTo(0, -d.r * .55); c.lineTo(d.r * .5, d.r * .32); c.lineTo(-d.r * .5, d.r * .32); c.closePath(); c.strokeStyle = 'rgba(255,255,255,.28)'; c.stroke(); }
+    const big = String(d.face).length > 2 ? .5 : String(d.face).length > 1 ? .62 : .78;
+    c.font = `800 ${Math.round(d.r * big)}px "Alegreya Sans",system-ui,sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const ink = lum(col) > .6 ? '#1b1013' : '#fffaf2';
+    const isMax = d.settled && !t.rolling && d.face === d.s && d.s > 2, isOne = d.settled && !t.rolling && d.face === 1;
+    c.fillStyle = isMax ? (lum(col) > .6 ? '#7a5200' : '#ffe27a') : ink;
+    c.fillText(String(d.face), 0, d.s === 4 ? d.r * .15 : d.r * .04);
+    if (isMax || isOne) { c.lineWidth = 2.5; c.strokeStyle = isMax ? '#ffd15c' : 'rgba(0,0,0,.6)'; path(); c.stroke(); }
+    c.restore();
+  }
+  const extra = t.roll ? flatDice(t.roll).length - t.dice.length : 0;
+  if (extra > 0) { c.fillStyle = 'rgba(255,240,220,.85)'; c.font = '700 13px "Alegreya Sans",sans-serif'; c.textAlign = 'right'; c.fillText(`+${extra} more`, t.w - 8, t.h - 10); }
+}
+const s20Inner = s => s === 20;
+
+/* ---------- sound (made in the browser, no files) ---------- */
+let ac = null;
+function audio(){ if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch {} } if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); return ac; }
+document.addEventListener('pointerdown', audio, { once: false, passive: true });
+function clack(t, force){
+  if (!soundOn || !ac || ac.state !== 'running') return;
+  const now = performance.now(); if (now - t.lastClack < 45) return; t.lastClack = now;
+  const len = .035, buf = ac.createBuffer(1, Math.floor(ac.sampleRate * len), ac.sampleRate), ch = buf.getChannelData(0);
+  for (let i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / ch.length, 3);
+  const src = ac.createBufferSource(); src.buffer = buf;
+  const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1400 + Math.random() * 1800; bp.Q.value = 4;
+  const g = ac.createGain(); g.gain.value = Math.min(.5, force / 1600);
+  src.connect(bp).connect(g).connect(ac.destination); src.start();
+}
+function fanfare(){
+  if (!soundOn || !ac || ac.state !== 'running') return;
+  [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+    const o = ac.createOscillator(), g = ac.createGain(), s = ac.currentTime + i * .09;
+    o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(.12, s + .02); g.gain.exponentialRampToValueAtTime(.001, s + .5);
+    o.connect(g).connect(ac.destination); o.start(s); o.stop(s + .55);
+  });
+}
+function drawSound(){ $('#soundBtn').textContent = soundOn ? 'Sound on' : 'Sound off'; $('#soundBtn').setAttribute('aria-pressed', soundOn); }
+$('#soundBtn').addEventListener('click', () => { soundOn = !soundOn; store.set('dice-sound', soundOn); drawSound(); audio(); });
+
+/* ---------- controls ---------- */
+function drawDice(){
+  $('#dice').innerHTML = SIDES.map(s => `<button type="button" class="die" data-s="${s}" aria-label="Add a d${s}${pool[s] ? ', ' + pool[s] + ' in pool' : ''}">
+    <svg viewBox="0 0 60 60" fill="${pool[s] ? 'rgba(227,176,75,.35)' : 'rgba(255,255,255,.08)'}" stroke="#fbeee4" stroke-width="2.4" stroke-linejoin="round">${SHAPES[s]}</svg>
+    <b>d${s === 100 ? '%' : s}</b>${pool[s] ? `<span class="n">${pool[s]}</span>` : ''}</button>`).join('');
+  const parts = SIDES.filter(s => pool[s]).map(s => `${pool[s]}d${s}`);
+  $('#formula').textContent = parts.length ? parts.join(' + ') + (mod ? (mod > 0 ? ' + ' : ' − ') + Math.abs(mod) : '') : 'No dice yet';
+  $('#modVal').textContent = (mod >= 0 ? '+' : '−') + Math.abs(mod);
+  updateRollBtn();
+}
+function updateRollBtn(){ $('#rollBtn').disabled = !SIDES.some(s => pool[s]); $('#rollBtn').textContent = me ? 'Roll' : 'Roll (pick a name first)'; }
+const bump = (s, d) => { pool[s] = Math.max(0, Math.min(20, pool[s] + d)); drawDice(); };
+$('#dice').addEventListener('click', e => { const b = e.target.closest('.die'); if (b) bump(+b.dataset.s, 1); });
+$('#dice').addEventListener('contextmenu', e => { const b = e.target.closest('.die'); if (b) { e.preventDefault(); bump(+b.dataset.s, -1); } });
+let pressT = null;
+$('#dice').addEventListener('touchstart', e => { const b = e.target.closest('.die'); if (!b) return; pressT = setTimeout(() => { pressT = 'fired'; bump(+b.dataset.s, -1); }, 500); }, { passive: true });
+$('#dice').addEventListener('touchend', e => { if (pressT === 'fired') e.preventDefault(); clearTimeout(pressT); pressT = null; });
+$('#dice').addEventListener('touchmove', () => { clearTimeout(pressT); pressT = null; }, { passive: true });
+$('#modUp').addEventListener('click', () => { mod = Math.min(30, mod + 1); drawDice(); });
+$('#modDown').addEventListener('click', () => { mod = Math.max(-30, mod - 1); drawDice(); });
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { mode = b.dataset.mode; document.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', x === b)); }));
+$('#clearPool').addEventListener('click', () => { pool = Object.fromEntries(SIDES.map(s => [s, 0])); mod = 0; $('#label').value = ''; drawDice(); });
+$('#hideBtn').addEventListener('click', () => { hidden = !hidden; $('#hideBtn').setAttribute('aria-pressed', hidden); });
+$('#rollBtn').addEventListener('click', () => { const t = poolText(); if (t) requestRoll(t, pool[20] ? mode : 'normal'); });
+$('#typed').addEventListener('submit', e => { e.preventDefault(); const t = $('#notation').value; if (requestRoll(t)) store.set('dice-last', t); });
+$('#stats').addEventListener('click', () => requestRoll('4d6d1'));
+$('#notation').value = store.get('dice-last') || '';
+$('#onlyMine').addEventListener('click', e => { onlyMine = !onlyMine; e.currentTarget.setAttribute('aria-pressed', onlyMine); renderLog(); });
+$('#copyBtn').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('#inviteUrl').value); $('#copyBtn').textContent = 'Copied'; }
+  catch { $('#inviteUrl').select(); $('#copyBtn').textContent = 'Press Ctrl+C'; }
+  setTimeout(() => $('#copyBtn').textContent = 'Copy', 2000);
+});
+function clearAll(){
+  rolls = []; revealed.clear(); renderLog();
+  for (const t of trays.values()) { t.rolling = false; t.roll = null; t.el.classList.remove('crit', 'fumble'); showLatest(t); }
+}
+$('#wipe').addEventListener('click', () => {
+  if (!isHost) return;
+  if (!wipeArmed) { wipeArmed = true; $('#wipe').textContent = 'Tap again to clear for everyone'; setTimeout(() => { wipeArmed = false; $('#wipe').textContent = 'Clear the log'; }, 4000); return; }
+  wipeArmed = false; $('#wipe').textContent = 'Clear the log';
+  store.set('dice-hist-' + code, []);
+  for (const p of players.values()) { try { p.conn.send({ type: 'clear' }); } catch {} }
+  clearAll();
+});
+
+/* ---------- history ---------- */
+const ago = t => { const s = Math.max(0, (Date.now() - t) / 1000 | 0); return s < 10 ? 'just now' : s < 60 ? s + 's ago' : s < 3600 ? (s / 60 | 0) + 'm ago' : (s / 3600 | 0) + 'h ago'; };
+const modeTxt = m => m === 'adv' ? 'advantage' : m === 'dis' ? 'disadvantage' : '';
+function natTag(r){
+  const kept = (r.groups || []).filter(g => g.s === 20).flatMap(g => (g.r || []).filter(x => !x.d));
+  if (kept.length !== 1) return '';
+  return kept[0].v === 20 ? 'crit' : kept[0].v === 1 ? 'fumble' : '';
+}
+function bits(r){
+  return (r.groups || []).map(g => (g.r || []).map(x => {
+    const v = Number(x.v) || 0, s = Number(g.s) || 0;
+    const cls = x.d ? 'drop' : v === s && s > 2 ? 'max' : v === 1 ? 'one' : '';
+    return `<span class="pip ${cls}">${g.neg ? '−' : ''}d${s === 100 ? '%' : s}: ${v}</span>`;
+  }).join('')).join('') + (r.mod ? `<span class="pip">${r.mod > 0 ? '+' : '−'}${Math.abs(r.mod)}</span>` : '');
+}
+function renderLog(){
+  let list = rolls.filter(r => revealed.has(r.id));
+  if (onlyMine) list = list.filter(r => r.cid === mineId());
+  if (!list.length) { $('#log').innerHTML = `<li class="empty">${onlyMine ? 'You have not rolled yet.' : 'No rolls yet. Be the first to tempt fate.'}</li>`; return; }
+  $('#log').innerHTML = list.map(r => {
+    const n = natTag(r), m = modeTxt(r.mode), own = r.cid === mineId();
+    return `<li class="${r.secret ? 'secret' : ''}" style="--c:${okC(r.color)}">
+      <div><span class="nm">${esc(r.name)}</span>${r.role === 'dm' ? ' <span class="tag dm">DM</span>' : ''}${r.secret ? ` <span class="tag h">${own ? (isHost ? 'Hidden: only you' : 'Hidden: you + DM') : 'Hidden roll'}</span>` : ''}${r.label ? ` · <b>${esc(r.label)}</b>` : ''}${n === 'crit' ? ' <span class="tag">Natural 20</span>' : n === 'fumble' ? ' <span class="tag f">Natural 1</span>' : ''}</div>
+      <div class="t">${Number(r.total) || 0}</div>
+      <div class="meta">${esc(r.formula)}${m ? ' · ' + m : ''} · ${ago(r.t)}</div>
+      <div class="bits">${bits(r)}</div></li>`;
+  }).join('');
+}
+setInterval(renderLog, 30000);
+
+drawMe(); drawDice(); drawSound(); renderLog();
+if (!me || !code) openWho();
+else if (isHost) startHosting();
+else startJoining();
+window.addEventListener('hashchange', () => { const c = (location.hash.slice(1).match(CODE_RE) || [])[0]; if (c && c !== code) location.reload(); });
+}
+</script>
+</body>
+</html>
